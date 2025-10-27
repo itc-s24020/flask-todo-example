@@ -5,14 +5,85 @@
     <title>カレンダービュー - タスク管理</title>
     <link rel="stylesheet" href="../static/style.css" />
     <style>
+      :root {
+        --bg-primary: #f8f9fa;
+        --bg-secondary: #ffffff;
+        --text-primary: #333;
+        --text-secondary: #666;
+        --border-color: #ddd;
+      }
+
+      body.dark-mode {
+        --bg-primary: #0f1419;
+        --bg-secondary: #1a1f2e;
+        --text-primary: #e8eaed;
+        --text-secondary: #9aa0a6;
+        --border-color: #3a424e;
+      }
+
+      body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        transition: background-color 0.3s, color 0.3s;
+      }
+
       .calendar-container {
-        background-color: #fff;
+        background-color: var(--bg-secondary);
         padding: 30px;
         border-radius: 15px;
         box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.15);
         width: 95%;
         max-width: 1200px;
         margin: 20px auto;
+        transition: background-color 0.3s;
+      }
+
+      .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+
+      .calendar-header h1 {
+        margin: 0;
+        color: var(--text-primary);
+      }
+
+      .header-button {
+        padding: 10px 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        min-width: 100px;
+        white-space: nowrap;
+      }
+
+      .header-button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .header-button.logout {
+        background-color: rgba(255, 82, 82, 0.3);
+        border-color: rgba(255, 82, 82, 0.6);
+      }
+
+      .header-button.logout:hover {
+        background-color: rgba(255, 82, 82, 0.4);
+        box-shadow: 0 4px 12px rgba(255, 82, 82, 0.3);
       }
 
       .calendar-header {
@@ -24,27 +95,39 @@
 
       .calendar-nav {
         display: flex;
-        gap: 15px;
+        gap: 10px;
+      }
+
+      .calendar-nav form {
+        display: flex;
+        gap: 10px;
       }
 
       .calendar-nav button {
-        padding: 10px 20px;
-        background-color: #ff5252;
+        padding: 12px 18px;
+        background-color: #4a90e2;
         color: white;
         border: none;
-        border-radius: 5px;
+        border-radius: 8px;
         cursor: pointer;
-        font-weight: bold;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        height: 48px;
+        line-height: 24px;
+        min-width: 90px;
       }
 
       .calendar-nav button:hover {
-        background-color: #e04040;
+        background-color: #357abd;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
       }
 
       .calendar-title {
         font-size: 1.8rem;
         font-weight: bold;
-        color: #333;
+        color: var(--text-primary);
       }
 
       .back-to-list {
@@ -73,17 +156,18 @@
         text-align: center;
         font-weight: bold;
         padding: 15px;
-        background-color: #f0f0f0;
+        background-color: var(--bg-secondary);
         border-radius: 5px;
-        color: #333;
+        color: var(--text-primary);
+        border-bottom: 3px solid #4a90e2;
       }
 
       .calendar-day {
         min-height: 120px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border-color);
         border-radius: 5px;
         padding: 10px;
-        background-color: #fafafa;
+        background-color: var(--bg-secondary);
         position: relative;
         overflow-y: auto;
         cursor: pointer;
@@ -91,18 +175,19 @@
       }
 
       .calendar-day:hover {
-        background-color: #f0f8ff;
-        border-color: #ff5252;
-        box-shadow: 0 2px 8px rgba(255, 82, 82, 0.2);
+        background-color: var(--bg-secondary);
+        border-color: #4a90e2;
+        box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
       }
 
       .calendar-day.other-month {
-        background-color: #f5f5f5;
-        color: #999;
+        background-color: var(--bg-secondary);
+        color: var(--text-secondary);
+        opacity: 0.5;
       }
 
       .calendar-day.today {
-        background-color: #fff9e6;
+        background-color: var(--bg-secondary);
         border: 2px solid #ffc107;
         font-weight: bold;
       }
@@ -110,11 +195,11 @@
       .day-number {
         font-weight: bold;
         margin-bottom: 8px;
-        color: #333;
+        color: var(--text-primary);
       }
 
       .day-number.other-month {
-        color: #ccc;
+        color: var(--text-secondary);
       }
 
       .day-tasks {
@@ -208,10 +293,11 @@
         flex: 1;
         min-width: 150px;
         padding: 15px;
-        background-color: #f0f0f0;
+        background-color: var(--bg-secondary);
         border-radius: 8px;
         text-align: center;
         border-left: 4px solid #ff5252;
+        transition: all 0.3s;
       }
 
       .stat-number {
@@ -257,10 +343,71 @@
           <h1>📅 カレンダービュー</h1>
         </div>
         <div style="display: flex; gap: 15px; align-items: center">
-          <a href="{{ url_for('home') }}" class="back-to-list"
-            >← タスク一覧に戻る</a
+          <button
+            id="darkModeToggle"
+            onclick="toggleDarkMode()"
+            style="
+              padding: 10px 16px;
+              background-color: #4a90e2;
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.9rem;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 44px;
+              min-width: 100px;
+              transition: all 0.3s;
+            "
           >
-          <a href="{{ url_for('logout') }}" class="logout-link">ログアウト</a>
+            🌙 ダーク
+          </button>
+          <a
+            href="{{ url_for('home') }}"
+            style="
+              padding: 10px 16px;
+              background-color: #4a90e2;
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.9rem;
+              text-decoration: none;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 44px;
+              min-width: 100px;
+              transition: all 0.3s;
+            "
+            >← 戻る</a
+          >
+          <a
+            href="{{ url_for('logout') }}"
+            style="
+              padding: 10px 16px;
+              background-color: #ff5252;
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.9rem;
+              text-decoration: none;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 44px;
+              min-width: 100px;
+              transition: all 0.3s;
+              box-shadow: 0 4px 8px rgba(255, 82, 82, 0.3);
+            "
+            >🚪 ログアウト</a
+          >
         </div>
       </div>
 
@@ -303,7 +450,7 @@
         <div class="calendar-nav">
           <form
             method="GET"
-            action="{{ url_for('calendar') }}"
+            action="{{ url_for('calendar_view') }}"
             style="display: flex; gap: 10px"
           >
             <button type="submit" name="action" value="prev">← 前月</button>
@@ -317,13 +464,13 @@
 
       <!-- カレンダーグリッド -->
       <div class="calendar-grid">
-        <div class="weekday">日</div>
         <div class="weekday">月</div>
         <div class="weekday">火</div>
         <div class="weekday">水</div>
         <div class="weekday">木</div>
         <div class="weekday">金</div>
         <div class="weekday">土</div>
+        <div class="weekday">日</div>
 
         {% for week in calendar %} {% for day_info in week %}
         <div
@@ -369,5 +516,34 @@
         </div>
       </div>
     </div>
+
+    <script>
+      // ダークモード初期化
+      function initDarkMode() {
+        const isDarkMode = localStorage.getItem("darkMode") === "true";
+        if (isDarkMode) {
+          document.body.classList.add("dark-mode");
+          updateDarkModeButton();
+        }
+      }
+
+      // ダークモード切り替え
+      function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+        const isDarkMode = document.body.classList.contains("dark-mode");
+        localStorage.setItem("darkMode", isDarkMode);
+        updateDarkModeButton();
+      }
+
+      // ボタン更新
+      function updateDarkModeButton() {
+        const btn = document.getElementById("darkModeToggle");
+        const isDarkMode = document.body.classList.contains("dark-mode");
+        btn.textContent = isDarkMode ? "☀️ ライト" : "🌙 ダーク";
+      }
+
+      // ページ読み込み時に初期化
+      document.addEventListener("DOMContentLoaded", initDarkMode);
+    </script>
   </body>
 </html>

@@ -2,444 +2,380 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <title>タスク管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>タスク管理 - Todo App</title>
     <link rel="stylesheet" href="../static/style.css" />
   </head>
   <body>
     <div class="container">
-      <div class="header-container">
-        <h1>タスク管理</h1>
-        <div class="user-actions">
-          <button
-            id="darkModeToggle"
-            onclick="toggleDarkMode()"
-            style="
-              background-color: transparent;
-              border: 1px solid #666;
-              color: var(--text-primary);
-              padding: 8px 12px;
-              border-radius: 5px;
-              cursor: pointer;
-              font-weight: bold;
-              transition: all 0.3s;
-              margin-right: 10px;
-            "
-          >
-            🌙 ダークモード
-          </button>
-          <a
-            href="{{ url_for('calendar') }}"
-            style="
-              text-decoration: none;
-              color: #4a90e2;
-              font-weight: bold;
-              padding: 5px 15px;
-              border: 1px solid #4a90e2;
-              border-radius: 3px;
-              margin-right: 10px;
-            "
-            >📅 カレンダー</a
-          >
-          <a href="{{ url_for('logout') }}" class="logout-link">ログアウト</a>
-        </div>
-      </div>
-
-      <script>
-        // ダークモード初期化
-        function initDarkMode() {
-          const isDarkMode = localStorage.getItem("darkMode") === "true";
-          if (isDarkMode) {
-            document.body.classList.add("dark-mode");
-            updateDarkModeButton();
-          }
-        }
-
-        // ダークモード切り替え
-        function toggleDarkMode() {
-          document.body.classList.toggle("dark-mode");
-          const isDarkMode = document.body.classList.contains("dark-mode");
-          localStorage.setItem("darkMode", isDarkMode);
-          updateDarkModeButton();
-        }
-
-        // ボタンのテキスト更新
-        function updateDarkModeButton() {
-          const btn = document.getElementById("darkModeToggle");
-          const isDarkMode = document.body.classList.contains("dark-mode");
-          btn.textContent = isDarkMode ? "☀️ ライトモード" : "🌙 ダークモード";
-        }
-
-        // ページ読み込み時に初期化
-        document.addEventListener("DOMContentLoaded", initDarkMode);
-      </script>
-
-      {% with messages = get_flashed_messages() %} {% if messages %}
-      <div class="flashes">
-        {% for message in messages %}
-        <div class="flash-message">{{ message }}</div>
-        {% endfor %}
-      </div>
-      {% endif %} {% endwith %}
-
-      <!-- 検索・フィルターフォーム -->
-      <div
-        style="
-          margin-bottom: 20px;
-          display: flex;
-          gap: 10px;
-          align-items: center;
-        "
-      >
-        <form
-          method="GET"
-          action="{{ url_for('home') }}"
-          class="search-group"
-          style="flex: 1; margin-bottom: 0"
-        >
-          <input
-            type="text"
-            name="search"
-            placeholder="タスクまたはタグで検索"
-            value="{{ search_query }}"
-          />
-          <button type="submit">検索</button>
-          {% if search_query %}
-          <a
-            href="{{ url_for('home') }}"
-            style="
-              padding: 12px 20px;
-              background-color: #666;
-              color: white;
-              border-radius: 5px;
-              text-decoration: none;
-              display: flex;
-              align-items: center;
-            "
-            >リセット</a
-          >
-          {% endif %}
-        </form>
-
-        <div style="display: flex; gap: 5px">
-          <button
-            type="button"
-            id="toggleCompletedBtn"
-            class="filter-button active"
-            onclick="toggleCompleted()"
-          >
-            ✓ 完了済み表示
-          </button>
-        </div>
-      </div>
-
-      <script>
-        let showCompleted = localStorage
-          ? localStorage.getItem("showCompleted") !== "false"
-          : true;
-
-        function toggleCompleted() {
-          showCompleted = !showCompleted;
-          if (localStorage) {
-            localStorage.setItem("showCompleted", showCompleted);
-          }
-          updateCompletedVisibility();
-        }
-
-        function updateCompletedVisibility() {
-          const completedSection = document.getElementById(
-            "completedTasksSection"
-          );
-          const btn = document.getElementById("toggleCompletedBtn");
-
-          if (showCompleted) {
-            completedSection.style.display = "block";
-            btn.classList.add("active");
-            btn.textContent = "✓ 完了済み表示";
-          } else {
-            completedSection.style.display = "none";
-            btn.classList.remove("active");
-            btn.textContent = "✓ 完了済み非表示";
-          }
-        }
-
-        // ページ読み込み時に状態を適用
-        document.addEventListener("DOMContentLoaded", function () {
-          updateCompletedVisibility();
-        });
-      </script>
-
-      <!-- タスク追加フォーム -->
-      <div class="add-form">
-        <form method="POST" action="/add">
-          <div class="form-row">
-            <div class="form-group" style="flex: 2">
-              <label for="title">タスク名（#タグ を含めて入力可）</label>
-              <input
-                type="text"
-                name="title"
-                id="title"
-                placeholder="例: 買い物 #買い物 #緊急"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="due_date">期限日</label>
-              <input type="date" name="due_date" id="due_date" />
-            </div>
-            <div class="form-group">
-              <label for="due_time">時間</label>
-              <input type="time" name="due_time" id="due_time" />
-            </div>
+      <div class="main-card">
+        <!-- ===== ヘッダー ===== -->
+        <div class="header-section">
+          <div class="header-left">
+            <h1>📋 タスク管理</h1>
           </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="priority">優先度</label>
-              <select
-                name="priority"
-                id="priority"
-                style="
-                  width: 100%;
-                  padding: 10px;
-                  border: 1px solid #ddd;
-                  border-radius: 3px;
-                "
-              >
-                <option value="low">🟡 低</option>
-                <option value="medium" selected>🟠 中</option>
-                <option value="high">🔴 高</option>
-              </select>
-            </div>
-            <div class="form-group" style="flex: 1"></div>
+          <div class="header-right">
+            <button
+              id="darkModeToggle"
+              onclick="toggleDarkMode()"
+              class="header-button"
+            >
+              🌙 ダーク
+            </button>
+            <a href="{{ url_for('calendar_view') }}" class="header-button"
+              >📅 カレンダー</a
+            >
+            <a href="{{ url_for('logout') }}" class="header-button logout"
+              >🚪 ログアウト</a
+            >
           </div>
+        </div>
 
-          <!-- 繰り返し設定 -->
-          <div class="form-group">
-            <label
-              style="display: flex; align-items: center; font-weight: normal"
+        <!-- ===== メインコンテンツ ===== -->
+        <div class="main-content">
+          <!-- フラッシュメッセージ -->
+          {% with messages = get_flashed_messages() %} {% if messages %}
+          <div class="flashes">
+            {% for message in messages %}
+            <div class="flash-message">{{ message }}</div>
+            {% endfor %}
+          </div>
+          {% endif %} {% endwith %}
+
+          <!-- 検索・フィルター -->
+          <div class="search-filter-container">
+            <form
+              method="GET"
+              action="{{ url_for('home') }}"
+              class="search-group"
             >
               <input
-                type="checkbox"
-                id="is_recurring"
-                name="is_recurring"
-                onchange="toggleRecurrenceOptions()"
+                type="text"
+                name="search"
+                placeholder="🔍 タスク名またはタグで検索..."
+                value="{{ search_query }}"
               />
-              <span style="margin-left: 8px">🔄 繰り返しタスクとして設定</span>
-            </label>
+              <button type="submit">検索</button>
+            </form>
+            <div class="filter-buttons">
+              {% if search_query %}
+              <a href="{{ url_for('home') }}" class="filter-button">リセット</a>
+              {% endif %}
+              <button
+                type="button"
+                id="toggleCompletedBtn"
+                class="filter-button active"
+                onclick="toggleCompleted()"
+              >
+                ✓ 完了済み表示
+              </button>
+            </div>
           </div>
 
-          <div
-            id="recurrenceOptions"
-            style="
-              display: none;
-              background-color: #f0f8ff;
-              padding: 15px;
-              border-radius: 5px;
-              margin-bottom: 15px;
-              border-left: 3px solid #2196f3;
-            "
-          >
-            <div class="form-row">
+          <!-- タスク追加フォーム -->
+          <div class="add-form">
+            <h3>➕ 新しいタスクを追加</h3>
+            <form method="POST" action="/add">
+              <div class="form-row">
+                <div class="form-group" style="grid-column: span 2">
+                  <label for="title">タスク名</label>
+                  <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    placeholder="例：プレゼン資料作成 #仕事"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="due_date">📅 期限日</label>
+                  <input type="date" name="due_date" id="due_date" />
+                </div>
+                <div class="form-group">
+                  <label for="due_time">⏰ 時間</label>
+                  <input type="time" name="due_time" id="due_time" />
+                </div>
+                <div class="form-group">
+                  <label for="priority">🎯 優先度</label>
+                  <select name="priority" id="priority">
+                    <option value="low">🟡 低</option>
+                    <option value="medium" selected>🟠 中</option>
+                    <option value="high">🔴 高</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 繰り返し設定 -->
               <div class="form-group">
-                <label for="recurrence_type">繰り返しパターン</label>
-                <select
-                  name="recurrence_type"
-                  id="recurrence_type"
+                <label
                   style="
-                    width: 100%;
-                    padding: 10px;
-                    border: 1px solid #ddd;
-                    border-radius: 3px;
+                    display: flex;
+                    align-items: center;
+                    font-weight: 500;
+                    cursor: pointer;
                   "
                 >
-                  <option value="daily">📅 毎日</option>
-                  <option value="weekly">📆 毎週</option>
-                  <option value="monthly">📊 毎月</option>
-                </select>
+                  <input
+                    type="checkbox"
+                    id="is_recurring"
+                    name="is_recurring"
+                    onchange="toggleRecurrenceOptions()"
+                  />
+                  <span style="margin-left: 10px">🔄 繰り返しタスク</span>
+                </label>
               </div>
+
+              <div
+                id="recurrenceOptions"
+                class="recurrence-options"
+                style="display: none"
+              >
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="recurrence_type">パターン</label>
+                    <select name="recurrence_type" id="recurrence_type">
+                      <option value="daily">📅 毎日</option>
+                      <option value="weekly">📆 毎週</option>
+                      <option value="monthly">📊 毎月</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="recurrence_end_date"
+                      >終了日（無指定で無期限）</label
+                    >
+                    <input
+                      type="date"
+                      name="recurrence_end_date"
+                      id="recurrence_end_date"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- メモ -->
               <div class="form-group">
-                <label for="recurrence_end_date"
-                  >繰り返し終了日（無指定で無期限）</label
-                >
-                <input
-                  type="date"
-                  name="recurrence_end_date"
-                  id="recurrence_end_date"
-                />
+                <label for="memo">💬 メモ</label>
+                <textarea
+                  name="memo"
+                  id="memo"
+                  placeholder="追加の説明やメモを記入..."
+                ></textarea>
               </div>
-            </div>
+
+              <button type="submit">タスクを追加</button>
+            </form>
           </div>
 
-          <div class="form-group">
-            <label for="memo">メモ</label>
-            <textarea
-              name="memo"
-              id="memo"
-              placeholder="追加の説明やメモを記入..."
-            ></textarea>
+          <!-- 未完了タスク -->
+          <div class="task-section">
+            <h2>📌 未完了のタスク</h2>
+            {% set incomplete = todo_list | selectattr('is_done', 'equalto',
+            False) | list %} {% if incomplete %}
+            <ul>
+              {% for todo in incomplete %}
+              <li>
+                <div class="task-title">
+                  <div class="task-meta">
+                    <span class="priority-badge priority-{{ todo.priority }}">
+                      {% if todo.priority == 'high' %}🔴 高{% elif todo.priority
+                      == 'medium' %}🟠 中{% else %}🟡 低{% endif %}
+                    </span>
+                    {% if todo.is_recurring %}
+                    <span class="recurring-badge">🔄 繰り返し</span>
+                    {% endif %} {% if todo.due_date %}
+                    <span class="due-date-badge"
+                      >📅 {{ todo.due_date }}{% if todo.due_time %} ⏰ {{
+                      todo.due_time }}{% endif %}</span
+                    >
+                    {% endif %}
+                  </div>
+                  <div class="task-name">{{ todo.title }}</div>
+                  {% if todo.tags %}
+                  <div class="task-tags">
+                    {% for tag in todo.tags.split(',') %} {% if tag.strip() %}
+                    <a
+                      href="{{ url_for('home', search='#' + tag.strip()) }}"
+                      class="tag"
+                      >#{{ tag.strip() }}</a
+                    >
+                    {% endif %} {% endfor %}
+                  </div>
+                  {% endif %} {% if todo.memo %}
+                  <div class="task-memo">💡 {{ todo.memo }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="task-actions">
+                  <form
+                    method="POST"
+                    action="/complete/{{ todo.id }}"
+                    style="display: inline"
+                  >
+                    <button type="submit" class="complete-button">
+                      ✓ 完了
+                    </button>
+                  </form>
+                  <a
+                    href="{{ url_for('edit', todo_id=todo.id) }}"
+                    class="edit-link"
+                    >✏️ 編集</a
+                  >
+                  <form
+                    method="POST"
+                    action="/delete/{{ todo.id }}"
+                    style="display: inline"
+                  >
+                    <button type="submit" class="delete-button">🗑️ 削除</button>
+                  </form>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="no-tasks">✨ タスクはありません。お疲れ様です！</div>
+            {% endif %}
           </div>
 
-          <button type="submit" style="width: 100%; margin-top: 10px">
-            タスクを追加
-          </button>
-        </form>
-      </div>
+          <!-- 完了済みタスク -->
+          <div class="task-section" id="completedTasksSection">
+            <h2>✅ 完了済みタスク</h2>
+            {% set completed = todo_list | selectattr('is_done', 'equalto',
+            True) | list %} {% if completed %}
+            <ul>
+              {% for todo in completed %}
+              <li>
+                <div class="task-title">
+                  <div class="task-meta">
+                    <span
+                      class="priority-badge priority-{{ todo.priority }}"
+                      style="opacity: 0.6"
+                    >
+                      {% if todo.priority == 'high' %}🔴 高{% elif todo.priority
+                      == 'medium' %}🟠 中{% else %}🟡 低{% endif %}
+                    </span>
+                    {% if todo.is_recurring %}
+                    <span class="recurring-badge" style="opacity: 0.6"
+                      >🔄 繰り返し</span
+                    >
+                    {% endif %} {% if todo.due_date %}
+                    <span class="due-date-badge" style="opacity: 0.6"
+                      >📅 {{ todo.due_date }}</span
+                    >
+                    {% endif %}
+                  </div>
+                  <div
+                    class="task-name"
+                    style="text-decoration: line-through; opacity: 0.7"
+                  >
+                    {{ todo.title }}
+                  </div>
+                  {% if todo.tags %}
+                  <div class="task-tags">
+                    {% for tag in todo.tags.split(',') %} {% if tag.strip() %}
+                    <a
+                      href="{{ url_for('home', search='#' + tag.strip()) }}"
+                      class="tag"
+                      style="opacity: 0.6"
+                      >#{{ tag.strip() }}</a
+                    >
+                    {% endif %} {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
 
-      <script>
-        function toggleRecurrenceOptions() {
-          const isRecurring = document.getElementById("is_recurring").checked;
-          const options = document.getElementById("recurrenceOptions");
-          options.style.display = isRecurring ? "block" : "none";
-        }
-      </script>
-
-      <div class="task-list">
-        <h2>未完了のタスク</h2>
-        {% set incomplete = todo_list | selectattr('is_done', 'equalto', False)
-        | list %} {% if incomplete %}
-        <ul>
-          {% for todo in incomplete %}
-          <li>
-            <div class="task-title">
-              <div class="task-name">
-                <span class="priority-badge priority-{{ todo.priority }}">
-                  {% if todo.priority == 'high' %}🔴 高{% elif todo.priority ==
-                  'medium' %}🟠 中{% else %}🟡 低{% endif %}
-                </span>
-                {% if todo.is_recurring %}
-                <span
-                  style="
-                    background-color: #e3f2fd;
-                    color: #1976d2;
-                    padding: 3px 8px;
-                    border-radius: 12px;
-                    font-size: 0.8rem;
-                    margin-left: 5px;
-                    font-weight: bold;
-                  "
-                  >🔄 繰り返し</span
-                >
-                {% endif %} {{ todo.title }}
-              </div>
-
-              {% if todo.due_date %}
-              <div class="task-info">
-                <span class="due-date-badge"
-                  >📅 {{ todo.due_date }}{% if todo.due_time %} ⏰ {{
-                  todo.due_time }}{% endif %}</span
-                >
-              </div>
-              {% endif %} {% if todo.memo %}
-              <div class="task-memo">{{ todo.memo }}</div>
-              {% endif %} {% if todo.tags %}
-              <div class="task-tags">
-                {% for tag in todo.tags.split(',') %} {% if tag.strip() %}
-                <a
-                  href="{{ url_for('home', search='#' + tag.strip()) }}"
-                  class="tag"
-                  >#{{ tag.strip() }}</a
-                >
-                {% endif %} {% endfor %}
-              </div>
-              {% endif %}
-            </div>
-
-            <div class="task-actions">
-              <form
-                method="POST"
-                action="/complete/{{ todo.id }}"
-                style="display: inline"
-              >
-                <button type="submit" class="complete-button">完了</button>
-              </form>
-              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link"
-                >編集</a
-              >
-              <form
-                method="POST"
-                action="/delete/{{ todo.id }}"
-                style="display: inline"
-              >
-                <button type="submit" class="delete-button">削除</button>
-              </form>
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="no-tasks">タスクはありません</p>
-        {% endif %}
-      </div>
-
-      <div class="task-list" id="completedTasksSection">
-        <h2>完了済みタスク</h2>
-        {% set completed = todo_list | selectattr('is_done', 'equalto', True) |
-        list %} {% if completed %}
-        <ul>
-          {% for todo in completed %}
-          <li>
-            <div class="task-title">
-              <label style="cursor: pointer">
-                <input
-                  type="checkbox"
-                  checked
-                  disabled
-                  style="margin-right: 8px"
-                />
-                <span
-                  class="priority-badge priority-{{ todo.priority }}"
-                  style="opacity: 0.6"
-                >
-                  {% if todo.priority == 'high' %}🔴 高{% elif todo.priority ==
-                  'medium' %}🟠 中{% else %}🟡 低{% endif %}
-                </span>
-                <span style="text-decoration: line-through; color: #aaa"
-                  >{{ todo.title }}</span
-                >
-              </label>
-
-              {% if todo.due_date %}
-              <div class="task-info" style="opacity: 0.7">
-                <span class="due-date-badge" style="opacity: 0.7"
-                  >📅 {{ todo.due_date }}{% if todo.due_time %} ⏰ {{
-                  todo.due_time }}{% endif %}</span
-                >
-              </div>
-              {% endif %} {% if todo.memo %}
-              <div class="task-memo" style="opacity: 0.7">{{ todo.memo }}</div>
-              {% endif %} {% if todo.tags %}
-              <div class="task-tags">
-                {% for tag in todo.tags.split(',') %} {% if tag.strip() %}
-                <a
-                  href="{{ url_for('home', search='#' + tag.strip()) }}"
-                  class="tag"
-                  style="opacity: 0.6"
-                  >#{{ tag.strip() }}</a
-                >
-                {% endif %} {% endfor %}
-              </div>
-              {% endif %}
-            </div>
-
-            <div class="task-actions">
-              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link"
-                >編集</a
-              >
-              <form
-                method="POST"
-                action="/delete/{{ todo.id }}"
-                style="display: inline"
-              >
-                <button type="submit" class="delete-button">削除</button>
-              </form>
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="no-tasks">完了済みタスクはありません</p>
-        {% endif %}
+                <div class="task-actions">
+                  <a
+                    href="{{ url_for('edit', todo_id=todo.id) }}"
+                    class="edit-link"
+                    >✏️ 編集</a
+                  >
+                  <form
+                    method="POST"
+                    action="/delete/{{ todo.id }}"
+                    style="display: inline"
+                  >
+                    <button type="submit" class="delete-button">🗑️ 削除</button>
+                  </form>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="no-tasks">完了済みタスクはまだありません。</div>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
+
+    <script>
+      // ダークモード初期化
+      function initDarkMode() {
+        const isDarkMode = localStorage.getItem("darkMode") === "true";
+        if (isDarkMode) {
+          document.body.classList.add("dark-mode");
+          updateDarkModeButton();
+        }
+      }
+
+      // ダークモード切り替え
+      function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+        const isDarkMode = document.body.classList.contains("dark-mode");
+        localStorage.setItem("darkMode", isDarkMode);
+        updateDarkModeButton();
+      }
+
+      // ボタン更新
+      function updateDarkModeButton() {
+        const btn = document.getElementById("darkModeToggle");
+        const isDarkMode = document.body.classList.contains("dark-mode");
+        btn.textContent = isDarkMode ? "☀️ ライト" : "🌙 ダーク";
+      }
+
+      // 完了済みタスク表示切り替え
+      let showCompleted = localStorage
+        ? localStorage.getItem("showCompleted") !== "false"
+        : true;
+
+      function toggleCompleted() {
+        showCompleted = !showCompleted;
+        if (localStorage) {
+          localStorage.setItem("showCompleted", showCompleted);
+        }
+        updateCompletedVisibility();
+      }
+
+      function updateCompletedVisibility() {
+        const section = document.getElementById("completedTasksSection");
+        const btn = document.getElementById("toggleCompletedBtn");
+
+        if (showCompleted) {
+          section.style.display = "block";
+          btn.classList.add("active");
+          btn.textContent = "✓ 完了済み表示";
+        } else {
+          section.style.display = "none";
+          btn.classList.remove("active");
+          btn.textContent = "✓ 完了済み非表示";
+        }
+      }
+
+      // 繰り返しオプション表示切り替え
+      function toggleRecurrenceOptions() {
+        const isRecurring = document.getElementById("is_recurring").checked;
+        const options = document.getElementById("recurrenceOptions");
+        options.style.display = isRecurring ? "block" : "none";
+      }
+
+      // ページ読み込み時に初期化
+      document.addEventListener("DOMContentLoaded", function () {
+        initDarkMode();
+        updateCompletedVisibility();
+      });
+    </script>
   </body>
 </html>

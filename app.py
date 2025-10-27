@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import os
 import re
+from calendar import monthcalendar, monthrange
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
@@ -23,7 +24,7 @@ class Todo(db.Model):
     tags = db.Column(db.String(500), default="")
     memo = db.Column(db.Text, default="")
     due_date = db.Column(db.String(10), default="")
-    due_time = db.Column(db.String(5), default="")  # HH:MM形式
+    due_time = db.Column(db.String(5), default="")
     priority = db.Column(db.String(10), default="medium")
     is_recurring = db.Column(db.Boolean, default=False)
     recurrence_type = db.Column(db.String(20), default="")
@@ -301,9 +302,7 @@ def complete(todo_id):
 
 @app.route("/calendar", methods=["GET"])
 @login_required
-def calendar():
-    from calendar import monthcalendar, monthrange
-    
+def calendar_view():
     user_id = session.get('user_id')
     action = request.args.get('action', 'today')
     

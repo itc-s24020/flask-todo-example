@@ -22,59 +22,216 @@
       </div>
       {% endif %} {% endwith %}
 
-      <form method="POST" action="/add">
+      <!-- 検索フォーム -->
+      <form method="GET" action="{{ url_for('home') }}" class="search-group">
         <input
           type="text"
-          name="title"
-          id="title"
-          placeholder="タスクを追加"
-          required
+          name="search"
+          placeholder="タスクまたはタグで検索"
+          value="{{ search_query }}"
         />
-        <button type="submit">追加</button>
+        <button type="submit">検索</button>
+        {% if search_query %}
+        <a
+          href="{{ url_for('home') }}"
+          style="
+            padding: 12px 20px;
+            background-color: #666;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+          "
+          >リセット</a
+        >
+        {% endif %}
       </form>
+
+      <!-- タスク追加フォーム -->
+      <div class="add-form">
+        <form method="POST" action="/add">
+          <div class="form-row">
+            <div class="form-group" style="flex: 2">
+              <label for="title">タスク名（#タグ を含めて入力可）</label>
+              <input
+                type="text"
+                name="title"
+                id="title"
+                placeholder="例: 買い物 #買い物 #緊急"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="due_date">期限日</label>
+              <input type="date" name="due_date" id="due_date" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="priority">優先度</label>
+              <select
+                name="priority"
+                id="priority"
+                style="
+                  width: 100%;
+                  padding: 10px;
+                  border: 1px solid #ddd;
+                  border-radius: 3px;
+                "
+              >
+                <option value="low">🟡 低</option>
+                <option value="medium" selected>🟠 中</option>
+                <option value="high">🔴 高</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="memo">メモ</label>
+            <textarea
+              name="memo"
+              id="memo"
+              placeholder="追加の説明やメモを記入..."
+            ></textarea>
+          </div>
+
+          <button type="submit" style="width: 100%; margin-top: 10px">
+            タスクを追加
+          </button>
+        </form>
+      </div>
 
       <div class="task-list">
         <h2>未完了のタスク</h2>
-        {% set incomplete = todo_list | selectattr('is_done', 'equalto', False) | list %}
-        {% if incomplete %}
+        {% set incomplete = todo_list | selectattr('is_done', 'equalto', False)
+        | list %} {% if incomplete %}
         <ul>
           {% for todo in incomplete %}
           <li>
-            <span class="task-title">{{ todo.title }}</span>
+            <div class="task-title">
+              <div class="task-name">
+                <span class="priority-badge priority-{{ todo.priority }}">
+                  {% if todo.priority == 'high' %}🔴 高{% elif todo.priority ==
+                  'medium' %}🟠 中{% else %}🟡 低{% endif %}
+                </span>
+                {{ todo.title }}
+              </div>
+
+              {% if todo.due_date %}
+              <div class="task-info">
+                <span class="due-date-badge">📅 {{ todo.due_date }}</span>
+              </div>
+              {% endif %} {% if todo.memo %}
+              <div class="task-memo">{{ todo.memo }}</div>
+              {% endif %} {% if todo.tags %}
+              <div class="task-tags">
+                {% for tag in todo.tags.split(',') %} {% if tag.strip() %}
+                <a
+                  href="{{ url_for('home', search='#' + tag.strip()) }}"
+                  class="tag"
+                  >#{{ tag.strip() }}</a
+                >
+                {% endif %} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+
             <div class="task-actions">
-              <form method="POST" action="/complete/{{ todo.id }}" style="display:inline;">
+              <form
+                method="POST"
+                action="/complete/{{ todo.id }}"
+                style="display: inline"
+              >
                 <button type="submit" class="complete-button">完了</button>
               </form>
-              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link">編集</a>
-              <form method="POST" action="/delete/{{ todo.id }}" style="display:inline;">
+              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link"
+                >編集</a
+              >
+              <form
+                method="POST"
+                action="/delete/{{ todo.id }}"
+                style="display: inline"
+              >
                 <button type="submit" class="delete-button">削除</button>
               </form>
             </div>
           </li>
           {% endfor %}
         </ul>
+        {% else %}
+        <p class="no-tasks">タスクはありません</p>
         {% endif %}
       </div>
+
       <div class="task-list">
-        <h2>完了済みタスク（チェックリスト）</h2>
-        {% set completed = todo_list | selectattr('is_done', 'equalto', True) | list %}
-        {% if completed %}
+        <h2>完了済みタスク</h2>
+        {% set completed = todo_list | selectattr('is_done', 'equalto', True) |
+        list %} {% if completed %}
         <ul>
           {% for todo in completed %}
           <li>
-            <label style="cursor:pointer;">
-              <input type="checkbox" checked disabled style="margin-right:8px;">
-              <span class="task-title" style="text-decoration: line-through; color: #aaa;">{{ todo.title }}</span>
-            </label>
+            <div class="task-title">
+              <label style="cursor: pointer">
+                <input
+                  type="checkbox"
+                  checked
+                  disabled
+                  style="margin-right: 8px"
+                />
+                <span
+                  class="priority-badge priority-{{ todo.priority }}"
+                  style="opacity: 0.6"
+                >
+                  {% if todo.priority == 'high' %}🔴 高{% elif todo.priority ==
+                  'medium' %}🟠 中{% else %}🟡 低{% endif %}
+                </span>
+                <span style="text-decoration: line-through; color: #aaa"
+                  >{{ todo.title }}</span
+                >
+              </label>
+
+              {% if todo.due_date %}
+              <div class="task-info" style="opacity: 0.7">
+                <span class="due-date-badge" style="opacity: 0.7"
+                  >📅 {{ todo.due_date }}</span
+                >
+              </div>
+              {% endif %} {% if todo.memo %}
+              <div class="task-memo" style="opacity: 0.7">{{ todo.memo }}</div>
+              {% endif %} {% if todo.tags %}
+              <div class="task-tags">
+                {% for tag in todo.tags.split(',') %} {% if tag.strip() %}
+                <a
+                  href="{{ url_for('home', search='#' + tag.strip()) }}"
+                  class="tag"
+                  style="opacity: 0.6"
+                  >#{{ tag.strip() }}</a
+                >
+                {% endif %} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+
             <div class="task-actions">
-              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link">編集</a>
-              <form method="POST" action="/delete/{{ todo.id }}" style="display:inline;">
+              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link"
+                >編集</a
+              >
+              <form
+                method="POST"
+                action="/delete/{{ todo.id }}"
+                style="display: inline"
+              >
                 <button type="submit" class="delete-button">削除</button>
               </form>
             </div>
           </li>
           {% endfor %}
         </ul>
+        {% else %}
+        <p class="no-tasks">完了済みタスクはありません</p>
         {% endif %}
       </div>
     </div>

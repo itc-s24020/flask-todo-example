@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <title>Edit Task - Task Manager</title>
+    <meta charset="UTF-8" />
+    <title>タスク編集 - タスク管理</title>
     <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Edit Task</h1>
+        <h1>タスク編集</h1>
 
         {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -18,15 +19,69 @@
             {% endif %}
         {% endwith %}
 
-        <form method="POST" action="/edit/{{ todo.id }}">
-            <div class="form-group">
-                <label for="title">Task Title:</label>
-                <input type="text" name="title" id="title" value="{{ todo.title }}" required>
-            </div>
-            <button type="submit">Update Task</button>
-        </form>
+        <div class="add-form">
+            <form method="POST" action="/edit/{{ todo.id }}">
+                <div class="form-group">
+                    <label for="title">タスク名（#タグ を含めて編集可）</label>
+                    <input 
+                        type="text" 
+                        name="title" 
+                        id="title" 
+                        value="{{ todo.title }}{% if todo.tags %}{% for tag in todo.tags.split(',') %} #{{ tag.strip() }}{% endfor %}{% endif %}" 
+                        required
+                        placeholder="例: 買い物 #買い物 #緊急"
+                    >
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="due_date">期限日</label>
+                        <input 
+                            type="date" 
+                            name="due_date" 
+                            id="due_date"
+                            value="{{ todo.due_date }}"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">優先度</label>
+                        <select name="priority" id="priority" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
+                            <option value="low" {% if todo.priority == 'low' %}selected{% endif %}>🟡 低</option>
+                            <option value="medium" {% if todo.priority == 'medium' %}selected{% endif %}>🟠 中</option>
+                            <option value="high" {% if todo.priority == 'high' %}selected{% endif %}>🔴 高</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="memo">メモ</label>
+                    <textarea 
+                        name="memo" 
+                        id="memo"
+                        placeholder="追加の説明やメモを記入..."
+                    >{{ todo.memo }}</textarea>
+                </div>
+
+                {% if todo.tags %}
+                <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: left;">
+                    <strong>現在のタグ:</strong>
+                    <div class="task-tags" style="margin-top: 8px;">
+                        {% for tag in todo.tags.split(',') %}
+                        {% if tag.strip() %}
+                        <span class="tag">#{{ tag.strip() }}</span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <button type="submit" style="width: 100%;">タスクを更新</button>
+            </form>
+        </div>
+
         <div class="back-link">
-            <a href="{{ url_for('home') }}">Back to Tasks</a>
+            <a href="{{ url_for('home') }}">← タスク一覧に戻る</a>
         </div>
     </div>
 </body>

@@ -10,6 +10,19 @@
       <div class="header-container">
         <h1>タスク管理</h1>
         <div class="user-actions">
+          <a
+            href="{{ url_for('calendar') }}"
+            style="
+              text-decoration: none;
+              color: #4a90e2;
+              font-weight: bold;
+              padding: 5px 15px;
+              border: 1px solid #4a90e2;
+              border-radius: 3px;
+              margin-right: 10px;
+            "
+            >📅 カレンダー</a
+          >
           <a href="{{ url_for('logout') }}" class="logout-link">ログアウト</a>
         </div>
       </div>
@@ -22,31 +35,92 @@
       </div>
       {% endif %} {% endwith %}
 
-      <!-- 検索フォーム -->
-      <form method="GET" action="{{ url_for('home') }}" class="search-group">
-        <input
-          type="text"
-          name="search"
-          placeholder="タスクまたはタグで検索"
-          value="{{ search_query }}"
-        />
-        <button type="submit">検索</button>
-        {% if search_query %}
-        <a
-          href="{{ url_for('home') }}"
-          style="
-            padding: 12px 20px;
-            background-color: #666;
-            color: white;
-            border-radius: 5px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-          "
-          >リセット</a
+      <!-- 検索・フィルターフォーム -->
+      <div
+        style="
+          margin-bottom: 20px;
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        "
+      >
+        <form
+          method="GET"
+          action="{{ url_for('home') }}"
+          class="search-group"
+          style="flex: 1; margin-bottom: 0"
         >
-        {% endif %}
-      </form>
+          <input
+            type="text"
+            name="search"
+            placeholder="タスクまたはタグで検索"
+            value="{{ search_query }}"
+          />
+          <button type="submit">検索</button>
+          {% if search_query %}
+          <a
+            href="{{ url_for('home') }}"
+            style="
+              padding: 12px 20px;
+              background-color: #666;
+              color: white;
+              border-radius: 5px;
+              text-decoration: none;
+              display: flex;
+              align-items: center;
+            "
+            >リセット</a
+          >
+          {% endif %}
+        </form>
+
+        <div style="display: flex; gap: 5px">
+          <button
+            type="button"
+            id="toggleCompletedBtn"
+            class="filter-button active"
+            onclick="toggleCompleted()"
+          >
+            ✓ 完了済み表示
+          </button>
+        </div>
+      </div>
+
+      <script>
+        let showCompleted = localStorage
+          ? localStorage.getItem("showCompleted") !== "false"
+          : true;
+
+        function toggleCompleted() {
+          showCompleted = !showCompleted;
+          if (localStorage) {
+            localStorage.setItem("showCompleted", showCompleted);
+          }
+          updateCompletedVisibility();
+        }
+
+        function updateCompletedVisibility() {
+          const completedSection = document.getElementById(
+            "completedTasksSection"
+          );
+          const btn = document.getElementById("toggleCompletedBtn");
+
+          if (showCompleted) {
+            completedSection.style.display = "block";
+            btn.classList.add("active");
+            btn.textContent = "✓ 完了済み表示";
+          } else {
+            completedSection.style.display = "none";
+            btn.classList.remove("active");
+            btn.textContent = "✓ 完了済み非表示";
+          }
+        }
+
+        // ページ読み込み時に状態を適用
+        document.addEventListener("DOMContentLoaded", function () {
+          updateCompletedVisibility();
+        });
+      </script>
 
       <!-- タスク追加フォーム -->
       <div class="add-form">
@@ -65,6 +139,10 @@
             <div class="form-group">
               <label for="due_date">期限日</label>
               <input type="date" name="due_date" id="due_date" />
+            </div>
+            <div class="form-group">
+              <label for="due_time">時間</label>
+              <input type="time" name="due_time" id="due_time" />
             </div>
           </div>
 
@@ -89,6 +167,63 @@
             <div class="form-group" style="flex: 1"></div>
           </div>
 
+          <!-- 繰り返し設定 -->
+          <div class="form-group">
+            <label
+              style="display: flex; align-items: center; font-weight: normal"
+            >
+              <input
+                type="checkbox"
+                id="is_recurring"
+                name="is_recurring"
+                onchange="toggleRecurrenceOptions()"
+              />
+              <span style="margin-left: 8px">🔄 繰り返しタスクとして設定</span>
+            </label>
+          </div>
+
+          <div
+            id="recurrenceOptions"
+            style="
+              display: none;
+              background-color: #f0f8ff;
+              padding: 15px;
+              border-radius: 5px;
+              margin-bottom: 15px;
+              border-left: 3px solid #2196f3;
+            "
+          >
+            <div class="form-row">
+              <div class="form-group">
+                <label for="recurrence_type">繰り返しパターン</label>
+                <select
+                  name="recurrence_type"
+                  id="recurrence_type"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 3px;
+                  "
+                >
+                  <option value="daily">📅 毎日</option>
+                  <option value="weekly">📆 毎週</option>
+                  <option value="monthly">📊 毎月</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="recurrence_end_date"
+                  >繰り返し終了日（無指定で無期限）</label
+                >
+                <input
+                  type="date"
+                  name="recurrence_end_date"
+                  id="recurrence_end_date"
+                />
+              </div>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="memo">メモ</label>
             <textarea
@@ -104,6 +239,14 @@
         </form>
       </div>
 
+      <script>
+        function toggleRecurrenceOptions() {
+          const isRecurring = document.getElementById("is_recurring").checked;
+          const options = document.getElementById("recurrenceOptions");
+          options.style.display = isRecurring ? "block" : "none";
+        }
+      </script>
+
       <div class="task-list">
         <h2>未完了のタスク</h2>
         {% set incomplete = todo_list | selectattr('is_done', 'equalto', False)
@@ -117,12 +260,28 @@
                   {% if todo.priority == 'high' %}🔴 高{% elif todo.priority ==
                   'medium' %}🟠 中{% else %}🟡 低{% endif %}
                 </span>
-                {{ todo.title }}
+                {% if todo.is_recurring %}
+                <span
+                  style="
+                    background-color: #e3f2fd;
+                    color: #1976d2;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-size: 0.8rem;
+                    margin-left: 5px;
+                    font-weight: bold;
+                  "
+                  >🔄 繰り返し</span
+                >
+                {% endif %} {{ todo.title }}
               </div>
 
               {% if todo.due_date %}
               <div class="task-info">
-                <span class="due-date-badge">📅 {{ todo.due_date }}</span>
+                <span class="due-date-badge"
+                  >📅 {{ todo.due_date }}{% if todo.due_time %} ⏰ {{
+                  todo.due_time }}{% endif %}</span
+                >
               </div>
               {% endif %} {% if todo.memo %}
               <div class="task-memo">{{ todo.memo }}</div>
@@ -166,7 +325,7 @@
         {% endif %}
       </div>
 
-      <div class="task-list">
+      <div class="task-list" id="completedTasksSection">
         <h2>完了済みタスク</h2>
         {% set completed = todo_list | selectattr('is_done', 'equalto', True) |
         list %} {% if completed %}
@@ -196,7 +355,8 @@
               {% if todo.due_date %}
               <div class="task-info" style="opacity: 0.7">
                 <span class="due-date-badge" style="opacity: 0.7"
-                  >📅 {{ todo.due_date }}</span
+                  >📅 {{ todo.due_date }}{% if todo.due_time %} ⏰ {{
+                  todo.due_time }}{% endif %}</span
                 >
               </div>
               {% endif %} {% if todo.memo %}

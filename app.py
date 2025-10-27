@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import re
 
@@ -21,9 +21,15 @@ class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100))
     tags = db.Column(db.String(500), default="")
-    memo = db.Column(db.Text, default="")  # メモ欄
-    due_date = db.Column(db.String(10), default="")  # 期限日（YYYY-MM-DD形式）
-    priority = db.Column(db.String(10), default="medium")  # 優先度: high, medium, low
+    memo = db.Column(db.Text, default="")
+    due_date = db.Column(db.String(10), default="")
+    due_time = db.Column(db.String(5), default="")  # HH:MM形式
+    priority = db.Column(db.String(10), default="medium")
+    is_recurring = db.Column(db.Boolean, default=False)
+    recurrence_type = db.Column(db.String(20), default="")
+    recurrence_end_date = db.Column(db.String(10), default="")
+    last_generated_date = db.Column(db.String(10), default="")
+    parent_recurring_id = db.Column(db.Integer, default=None)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     is_done = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -45,6 +51,75 @@ def extract_tags(title):
 def remove_tags_from_title(title):
     """タイトルから#タグを削除"""
     return re.sub(r'#\w+', '', title).strip()
+
+def generate_recurring_tasks():
+    """繰り返しタスクを生成"""
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    recurring_tasks = Todo.query.filter_by(is_recurring=True).all()
+    
+    for task in recurring_tasks:
+        if task.recurrence_end_date and task.recurrence_end_date < today:
+            continue
+        
+        if not task.last_generated_date:
+            task.last_generated_date = today
+        
+        last_date = datetime.strptime(task.last_generated_date, '%Y-%m-%d')
+        today_date = datetime.strptime(today, '%Y-%m-%d')
+        
+        next_date = last_date
+        if task.recurrence_type == 'daily':
+            while next_date < today_date:
+                next_date += timedelta(days=1)
+        elif task.recurrence_type == 'weekly':
+            while next_date < today_date:
+                next_date += timedelta(weeks=1)
+        elif task.recurrence_type == 'monthly':
+            try:
+                next_date = next_date.replace(month=next_date.month + 1)
+            except ValueError:
+                next_date = next_date.replace(year=next_date.year + 1, month=1)
+            if next_date < today_date:
+                try:
+                    next_date = next_date.replace(month=next_date.month + 1)
+                except ValueError:
+                    next_date = next_date.replace(year=next_date.year + 1, month=1)
+        
+        while next_date <= today_date:
+            if task.recurrence_end_date and next_date.strftime('%Y-%m-%d') > task.recurrence_end_date:
+                break
+            
+            existing = Todo.query.filter_by(
+                parent_recurring_id=task.id,
+                due_date=next_date.strftime('%Y-%m-%d')
+            ).first()
+            
+            if not existing:
+                new_task = Todo(
+                    title=task.title,
+                    tags=task.tags,
+                    memo=task.memo,
+                    due_date=next_date.strftime('%Y-%m-%d'),
+                    due_time=task.due_time,
+                    priority=task.priority,
+                    user_id=task.user_id,
+                    parent_recurring_id=task.id
+                )
+                db.session.add(new_task)
+            
+            if task.recurrence_type == 'daily':
+                next_date += timedelta(days=1)
+            elif task.recurrence_type == 'weekly':
+                next_date += timedelta(weeks=1)
+            elif task.recurrence_type == 'monthly':
+                try:
+                    next_date = next_date.replace(month=next_date.month + 1)
+                except ValueError:
+                    next_date = next_date.replace(year=next_date.year + 1, month=1)
+        
+        task.last_generated_date = today
+        db.session.commit()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -79,6 +154,8 @@ def home():
     user_id = session.get('user_id')
     search_query = request.args.get('search', '').strip()
     
+    generate_recurring_tasks()
+    
     todo_list = Todo.query.filter_by(user_id=user_id).all()
     
     if search_query:
@@ -88,7 +165,6 @@ def home():
                 filtered_list.append(todo)
         todo_list = filtered_list
     
-    # 優先度順でソート（高 > 中 > 低）
     priority_order = {'high': 0, 'medium': 1, 'low': 2}
     todo_list.sort(key=lambda x: priority_order.get(x.priority, 1))
     
@@ -100,7 +176,11 @@ def add():
     title = request.form.get("title")
     memo = request.form.get("memo", "")
     due_date = request.form.get("due_date", "")
+    due_time = request.form.get("due_time", "")
     priority = request.form.get("priority", "medium")
+    is_recurring = request.form.get("is_recurring") == "on"
+    recurrence_type = request.form.get("recurrence_type", "daily") if is_recurring else ""
+    recurrence_end_date = request.form.get("recurrence_end_date", "") if is_recurring else ""
     user_id = session.get('user_id')
     
     if not title:
@@ -110,10 +190,27 @@ def add():
     tags = extract_tags(title)
     clean_title = remove_tags_from_title(title)
     
-    new_todo = Todo(title=clean_title, tags=tags, memo=memo, due_date=due_date, priority=priority, user_id=user_id)
+    new_todo = Todo(
+        title=clean_title,
+        tags=tags,
+        memo=memo,
+        due_date=due_date,
+        due_time=due_time,
+        priority=priority,
+        is_recurring=is_recurring,
+        recurrence_type=recurrence_type,
+        recurrence_end_date=recurrence_end_date,
+        user_id=user_id
+    )
     db.session.add(new_todo)
     db.session.commit()
-    flash('タスクを追加しました')
+    
+    if is_recurring:
+        flash('繰り返しタスクを追加しました')
+        generate_recurring_tasks()
+    else:
+        flash('タスクを追加しました')
+    
     return redirect(url_for("home"))
 
 @app.route("/edit/<int:todo_id>", methods=["GET", "POST"])
@@ -129,7 +226,12 @@ def edit(todo_id):
         title = request.form.get('title')
         memo = request.form.get('memo', '')
         due_date = request.form.get('due_date', '')
+        due_time = request.form.get('due_time', '')
         priority = request.form.get('priority', 'medium')
+        is_recurring = request.form.get("is_recurring") == "on"
+        recurrence_type = request.form.get("recurrence_type", "daily") if is_recurring else ""
+        recurrence_end_date = request.form.get("recurrence_end_date", "") if is_recurring else ""
+        
         tags = extract_tags(title)
         clean_title = remove_tags_from_title(title)
         
@@ -137,7 +239,11 @@ def edit(todo_id):
         todo.tags = tags
         todo.memo = memo
         todo.due_date = due_date
+        todo.due_time = due_time
         todo.priority = priority
+        todo.is_recurring = is_recurring
+        todo.recurrence_type = recurrence_type
+        todo.recurrence_end_date = recurrence_end_date
         db.session.commit()
         flash('タスクを更新しました')
         return redirect(url_for('home'))
@@ -192,6 +298,106 @@ def complete(todo_id):
     db.session.commit()
     flash('タスクを完了済みに追加しました')
     return redirect(url_for("home"))
+
+@app.route("/calendar", methods=["GET"])
+@login_required
+def calendar():
+    from calendar import monthcalendar, monthrange
+    
+    user_id = session.get('user_id')
+    action = request.args.get('action', 'today')
+    
+    # 現在の年月を取得（セッションから）
+    if 'calendar_year' not in session:
+        session['calendar_year'] = datetime.now().year
+    if 'calendar_month' not in session:
+        session['calendar_month'] = datetime.now().month
+    
+    year = session.get('calendar_year', datetime.now().year)
+    month = session.get('calendar_month', datetime.now().month)
+    
+    # ナビゲーション処理
+    if action == 'prev':
+        month -= 1
+        if month < 1:
+            month = 12
+            year -= 1
+    elif action == 'next':
+        month += 1
+        if month > 12:
+            month = 1
+            year += 1
+    elif action == 'today':
+        year = datetime.now().year
+        month = datetime.now().month
+    
+    session['calendar_year'] = year
+    session['calendar_month'] = month
+    
+    # 月のカレンダーを取得
+    cal = monthcalendar(year, month)
+    
+    # タスクを取得
+    all_todos = Todo.query.filter_by(user_id=user_id).all()
+    
+    # カレンダーデータを構築
+    calendar_data = []
+    today = datetime.now().date()
+    
+    for week in cal:
+        week_data = []
+        for day in week:
+            if day == 0:
+                # 他の月の日付
+                week_data.append({
+                    'day': '',
+                    'other_month': True,
+                    'is_today': False,
+                    'tasks': []
+                })
+            else:
+                # 当月の日付
+                date_str = f"{year:04d}-{month:02d}-{day:02d}"
+                date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+                
+                # その日のタスクを取得
+                day_tasks = []
+                for todo in all_todos:
+                    if todo.due_date == date_str:
+                        day_tasks.append({
+                            'title': todo.title,
+                            'priority': todo.priority,
+                            'is_done': todo.is_done
+                        })
+                
+                week_data.append({
+                    'day': day,
+                    'other_month': False,
+                    'is_today': date_obj == today,
+                    'tasks': day_tasks
+                })
+        
+        calendar_data.append(week_data)
+    
+    # 統計情報を計算
+    month_start = f"{year:04d}-{month:02d}-01"
+    month_end = f"{year:04d}-{month:02d}-{monthrange(year, month)[1]:02d}"
+    
+    month_tasks = [t for t in all_todos if month_start <= t.due_date <= month_end]
+    completed = sum(1 for t in month_tasks if t.is_done)
+    incomplete = len(month_tasks) - completed
+    completion_rate = int((completed / len(month_tasks) * 100)) if month_tasks else 0
+    
+    return render_template(
+        'calendar.html',
+        calendar=calendar_data,
+        year=year,
+        month=month,
+        total_tasks=len(month_tasks),
+        completed_tasks=completed,
+        incomplete_tasks=incomplete,
+        completion_rate=completion_rate
+    )
 
 
 if __name__ == "__main__":

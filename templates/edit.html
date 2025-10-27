@@ -45,11 +45,88 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="due_time">時間</label>
+                        <input 
+                            type="time" 
+                            name="due_time" 
+                            id="due_time"
+                            value="{{ todo.due_time }}"
+                        >
+                    </div>
+
+                    <div class="form-group">
                         <label for="priority">優先度</label>
                         <select name="priority" id="priority" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
                             <option value="low" {% if todo.priority == 'low' %}selected{% endif %}>🟡 低</option>
                             <option value="medium" {% if todo.priority == 'medium' %}selected{% endif %}>🟠 中</option>
                             <option value="high" {% if todo.priority == 'high' %}selected{% endif %}>🔴 高</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 繰り返し設定 -->
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; font-weight: normal;">
+                        <input type="checkbox" id="is_recurring" name="is_recurring" onchange="toggleRecurrenceOptions()" {% if todo.is_recurring %}checked{% endif %}>
+                        <span style="margin-left: 8px;">🔄 繰り返しタスクとして設定</span>
+                    </label>
+                </div>
+
+                <div id="recurrenceOptions" style="{% if not todo.is_recurring %}display: none; {% endif %}background-color: #f0f8ff; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #2196F3;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="recurrence_type">繰り返しパターン</label>
+                            <select name="recurrence_type" id="recurrence_type" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 3px;">
+                                <option value="daily" {% if todo.recurrence_type == 'daily' %}selected{% endif %}>📅 毎日</option>
+                                <option value="weekly" {% if todo.recurrence_type == 'weekly' %}selected{% endif %}>📆 毎週</option>
+                                <option value="monthly" {% if todo.recurrence_type == 'monthly' %}selected{% endif %}>📊 毎月</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="recurrence_end_date">繰り返し終了日（無指定で無期限）</label>
+                            <input
+                                type="date"
+                                name="recurrence_end_date"
+                                id="recurrence_end_date"
+                                value="{{ todo.recurrence_end_date }}"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="memo">メモ</label>
+                    <textarea 
+                        name="memo" 
+                        id="memo"
+                        placeholder="追加の説明やメモを記入..."
+                    >{{ todo.memo }}</textarea>
+                </div>
+
+                {% if todo.tags %}
+                <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: left;">
+                    <strong>現在のタグ:</strong>
+                    <div class="task-tags" style="margin-top: 8px;">
+                        {% for tag in todo.tags.split(',') %}
+                        {% if tag.strip() %}
+                        <span class="tag">#{{ tag.strip() }}</span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <button type="submit" style="width: 100%;">タスクを更新</button>
+            </form>
+        </div>
+
+        <script>
+            function toggleRecurrenceOptions() {
+                const isRecurring = document.getElementById('is_recurring').checked;
+                const options = document.getElementById('recurrenceOptions');
+                options.style.display = isRecurring ? 'block' : 'none';
+            }
+        </script>'high' %}selected{% endif %}>🔴 高</option>
                         </select>
                     </div>
                 </div>

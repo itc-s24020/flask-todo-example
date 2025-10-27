@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Task - Task Manager</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Task</h1>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flashes">
+                    {% for message in messages %}
+                        <div class="flash-message">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/edit/{{ todo.id }}">
+            <div class="form-group">
+                <label for="title">Task Title:</label>
+                <input type="text" name="title" id="title" value="{{ todo.title }}" required>
+            </div>
+            <button type="submit">Update Task</button>
+        </form>
+        <div class="back-link">
+            <a href="{{ url_for('home') }}">Back to Tasks</a>
+        </div>
+    </div>
+</body>
+</html>

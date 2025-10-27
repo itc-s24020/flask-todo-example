@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>新規登録 | TODOアプリ</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      body {
+        background: #f7f7f7;
+      }
+      .register-container {
+        width: 400px;
+        max-width: 95vw;
+        box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.12);
+        padding: 32px 20px 28px 20px;
+        border-radius: 16px;
+        background-color: #fff;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+        margin-bottom: 28px;
+        font-size: 2rem;
+        color: #28a745;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .form-group {
+        width: 100%;
+        margin-bottom: 22px;
+        text-align: center;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        text-align: center;
+        font-size: 1.08rem;
+        color: #444;
+        font-weight: 500;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: 92%;
+        margin: 0 auto;
+        padding: 12px 10px;
+        border: 1.5px solid #bbb;
+        border-radius: 6px;
+        display: block;
+        text-align: center;
+        font-size: 1.08rem;
+        background: #fafbfc;
+        transition: border 0.2s;
+        margin-bottom: 2px;
+      }
+      input[type="text"]:focus,
+      input[type="password"]:focus {
+        border: 2px solid #28a745;
+        outline: none;
+        background: #eef6ee;
+      }
+      #strength-message,
+      #match-message {
+        text-align: center !important;
+        font-size: 13px;
+        margin-top: 6px;
+        min-height: 18px;
+      }
+      .btn {
+        width: 96%;
+        padding: 12px;
+        background: linear-gradient(90deg, #28a745 60%, #34c759 100%);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 17px;
+        cursor: pointer;
+        margin-top: 14px;
+        box-shadow: 0 2px 12px rgba(40, 167, 69, 0.12);
+        font-weight: bold;
+        letter-spacing: 1px;
+        transition: background 0.2s;
+      }
+      .btn:hover {
+        background: linear-gradient(90deg, #218838 60%, #28a745 100%);
+      }
+      .flash {
+        color: #d9534f;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 1.08rem;
+        background: #fff0f0;
+        border-radius: 6px;
+        padding: 8px 0;
+      }
+      .login-link {
+        display: block;
+        margin-top: 22px;
+        color: #007bff;
+        text-decoration: underline;
+        font-size: 1rem;
+        text-align: center;
+      }
+      .form-group label[for="toggleConfirm"],
+      .form-group input[type="checkbox"] {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="register-container">
+      <h2>新規登録</h2>
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div class="flash">{{ messages[0] }}</div>
+      {% endif %} {% endwith %}
+      <form method="POST">
+        <div class="form-group">
+          <label for="username">ユーザー名</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            autofocus
+            placeholder="ユーザー名を入力"
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">パスワード</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            oninput="checkStrength(); checkMatch();"
+            placeholder="パスワードを入力"
+          />
+          <div
+            id="strength-message"
+            style="text-align: left; font-size: 13px; margin-top: 4px"
+          ></div>
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">パスワード確認</label>
+          <input
+            type="password"
+            id="confirm_password"
+            name="confirm_password"
+            required
+            oninput="checkMatch();"
+            placeholder="パスワードを再入力"
+          />
+          <div
+            id="match-message"
+            style="text-align: left; font-size: 13px; margin-top: 4px"
+          ></div>
+          <label
+            style="
+              font-size: 13px;
+              margin-top: 6px;
+              display: block;
+              text-align: center;
+            "
+          >
+            <input
+              type="checkbox"
+              id="toggleConfirm"
+              onclick="toggleConfirmPassword()"
+            />
+            パスワードを表示
+          </label>
+        </div>
+        <button type="submit" class="btn">登録</button>
+      </form>
+      <a href="{{ url_for('login') }}" class="login-link">ログイン画面へ</a>
+    </div>
+    <script>
+      function checkStrength() {
+        const pwd = document.getElementById("password").value;
+        const msg = document.getElementById("strength-message");
+        let strength = "";
+        // 判定基準
+        // 弱い: 6文字未満
+        // 普通: 6文字以上かつ英大文字・小文字・数字のうち2種以上
+        // 強い: 8文字以上かつ英大文字・小文字・数字・記号すべて含む
+        if (pwd.length < 6) {
+          strength = "強度: 弱い（6文字以上推奨）";
+          msg.style.color = "#d9534f";
+        } else if (
+          pwd.length >= 8 &&
+          /[A-Z]/.test(pwd) &&
+          /[a-z]/.test(pwd) &&
+          /[0-9]/.test(pwd) &&
+          /[^A-Za-z0-9]/.test(pwd)
+        ) {
+          strength = "強度: 強い（安全なパスワードです）";
+          msg.style.color = "#28a745";
+        } else if (
+          (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) ||
+          (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) ||
+          (/[a-z]/.test(pwd) && /[0-9]/.test(pwd))
+        ) {
+          strength = "強度: 普通（英大文字・小文字・数字を組み合わせ推奨）";
+          msg.style.color = "#f0ad4e";
+        } else {
+          strength = "強度: 弱い（英大文字・小文字・数字を含めてください）";
+          msg.style.color = "#d9534f";
+        }
+        msg.textContent = strength;
+      }
+      function checkMatch() {
+        const pwd = document.getElementById("password").value;
+        const conf = document.getElementById("confirm_password").value;
+        const msg = document.getElementById("match-message");
+        if (!conf) {
+          msg.textContent = "";
+          return;
+        }
+        if (pwd === conf) {
+          msg.textContent = "パスワードが一致しています";
+          msg.style.color = "#28a745";
+        } else {
+          msg.textContent = "パスワードが一致しません";
+          msg.style.color = "#d9534f";
+        }
+      }
+      function toggleConfirmPassword() {
+        const conf = document.getElementById("confirm_password");
+        const toggle = document.getElementById("toggleConfirm");
+        conf.type = toggle.checked ? "text" : "password";
+      }
+    </script>
+  </body>
+</html>

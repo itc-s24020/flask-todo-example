@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>タスク管理</title>
+    <link rel="stylesheet" href="../static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header-container">
+        <h1>タスク管理</h1>
+        <div class="user-actions">
+          <a href="{{ url_for('logout') }}" class="logout-link">ログアウト</a>
+        </div>
+      </div>
+
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div class="flashes">
+        {% for message in messages %}
+        <div class="flash-message">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
+
+      <form method="POST" action="/add">
+        <input
+          type="text"
+          name="title"
+          id="title"
+          placeholder="タスクを追加"
+          required
+        />
+        <button type="submit">追加</button>
+      </form>
+
+      <div class="task-list">
+        <h2>未完了のタスク</h2>
+        {% set incomplete = todo_list | selectattr('is_done', 'equalto', False) | list %}
+        {% if incomplete %}
+        <ul>
+          {% for todo in incomplete %}
+          <li>
+            <span class="task-title">{{ todo.title }}</span>
+            <div class="task-actions">
+              <form method="POST" action="/complete/{{ todo.id }}" style="display:inline;">
+                <button type="submit" class="complete-button">完了</button>
+              </form>
+              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link">編集</a>
+              <form method="POST" action="/delete/{{ todo.id }}" style="display:inline;">
+                <button type="submit" class="delete-button">削除</button>
+              </form>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      <div class="task-list">
+        <h2>完了済みタスク（チェックリスト）</h2>
+        {% set completed = todo_list | selectattr('is_done', 'equalto', True) | list %}
+        {% if completed %}
+        <ul>
+          {% for todo in completed %}
+          <li>
+            <label style="cursor:pointer;">
+              <input type="checkbox" checked disabled style="margin-right:8px;">
+              <span class="task-title" style="text-decoration: line-through; color: #aaa;">{{ todo.title }}</span>
+            </label>
+            <div class="task-actions">
+              <a href="{{ url_for('edit', todo_id=todo.id) }}" class="edit-link">編集</a>
+              <form method="POST" action="/delete/{{ todo.id }}" style="display:inline;">
+                <button type="submit" class="delete-button">削除</button>
+              </form>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>

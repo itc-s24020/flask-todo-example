@@ -7,7 +7,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>タスク編集</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1>タスク編集</h1>
+            <button id="darkModeToggle" onclick="toggleDarkMode()" style="background-color: transparent; border: 1px solid #666; color: var(--text-primary); padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s;">🌙 ダークモード</button>
+        </div>
 
         {% with messages = get_flashed_messages() %}
             {% if messages %}
